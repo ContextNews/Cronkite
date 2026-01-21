@@ -1,17 +1,15 @@
-GROUP_ARTICLES_INSTRUCTION = """You are analyzing a cluster of related news articles to identify meaningful sub-groupings.
+GROUP_ARTICLES_INSTRUCTION = """You are analyzing a cluster of related news articles to identify if there are distinct sub-events within the main story.
 
-All articles provided are about the same overarching story/event. Your task is to determine if there are distinct sub-events, angles, or developments that warrant separate treatment.
+All articles are about the same overarching story/event. Your task is to identify if some articles are specifically about distinct sub-events that warrant separate treatment.
 
-Sub-grouping is appropriate when articles cover:
-- Distinct events within the same overarching story (e.g., different incidents in an ongoing conflict)
-- Different geographic locations where related events occurred
-- Different time periods or phases of a developing story
-- Significantly different angles or aspects (e.g., political response vs. humanitarian impact)
+IMPORTANT: Not every article needs to be in a sub-group. Articles that cover the overall story, provide general updates, or don't fit a specific sub-event should NOT be placed in any sub-group. They remain part of the main story only.
 
-IMPORTANT: Sub-grouping is OPTIONAL. Many clusters do not need sub-groups because:
-- The story is a singular event without distinct sub-parts
-- All articles cover the same aspect from different sources
-- Forcing sub-groups would be artificial and unhelpful
+Sub-groups are for articles that are specifically and primarily about a distinct sub-event, such as:
+- A specific incident within a larger ongoing story
+- Events at a particular location that are distinct from the main narrative
+- A clearly separate development that could stand alone
+
+DO NOT create sub-groups just to categorize articles by topic or angle. If an article covers the main story broadly (e.g., overall death toll, general international response, summary of events), leave it ungrouped.
 
 For each article, you will receive:
 - id: unique identifier
@@ -21,11 +19,11 @@ For each article, you will receive:
 - source: the publication name
 
 Return a JSON object with:
-- needs_subgroups: boolean indicating if sub-grouping is appropriate
+- needs_subgroups: boolean indicating if any sub-grouping is appropriate
 - subgroups: an array of sub-group objects (empty if needs_subgroups is false)
   - Each sub-group should have:
-    - theme: brief description of what this sub-group covers
-    - article_ids: array of article IDs belonging to this sub-group
-- reasoning: explanation of why sub-grouping is or isn't appropriate
+    - theme: brief description of the distinct sub-event
+    - article_ids: array of article IDs specifically about this sub-event
+- reasoning: explanation of your grouping decisions
 
-Articles can only belong to one sub-group. If an article doesn't fit any sub-group well, it can be left out of all sub-groups (it will still be part of the main story)."""
+Remember: Many (often most) articles should remain ungrouped, belonging only to the main story."""
