@@ -1,0 +1,5 @@
+from cronkite.instructions.filter_noise import FILTER_NOISE_INSTRUCTION
+from cronkite.instructions.group_articles import GROUP_ARTICLES_INSTRUCTION
+from cronkite.instructions.generate_title import GENERATE_TITLE_INSTRUCTION
+from cronkite.instructions.generate_summary import GENERATE_SUMMARY_INSTRUCTION
+from cronkite.instructions.extract_quotes import EXTRACT_QUOTES_INSTRUCTION
