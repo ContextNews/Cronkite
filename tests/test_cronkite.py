@@ -113,22 +113,9 @@ def main():
     story = cronkite.generate_story(articles)
 
     output_path = save_output(args.cluster, story, args.model)
-    print(f"Story saved to: {output_path}")
+    print(f"Story saved to: {output_path}\n")
 
-    print("\n" + "=" * 60)
-    print("GENERATED STORY")
-    print("=" * 60)
-    print(f"\nTitle: {story['title']}")
-    print(f"\nSummary:\n{story['summary']}")
-    print(f"\nQuotes ({len(story['quotes'])}):")
-    for quote in story['quotes']:
-        speaker = quote.get('speaker_name') or quote.get('speaker_org') or 'Unknown'
-        print(f"  - \"{quote['text'][:100]}...\" - {speaker}")
-    print(f"\nSub-stories ({len(story['sub_stories'])}):")
-    for sub in story['sub_stories']:
-        print(f"  - {sub['title']}")
-    print(f"\nArticles used: {len(story['article_ids'])}")
-    print(f"Noise filtered: {len(story['noise_article_ids'])}")
+    print(json.dumps(story, indent=2))
 
 
 if __name__ == "__main__":

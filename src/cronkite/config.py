@@ -11,4 +11,5 @@ class CronkiteConfig:
     generate_summary: bool = True
     generate_key_points: bool = True
     extract_quotes: bool = True
+    resolve_location: bool = True
     generate_substories: bool = True

@@ -1,17 +1,17 @@
+import json
+
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
 
-from cronkite.actions import (
-    filter_noise,
-    group_articles,
-    generate_title,
-    generate_summary,
-    generate_key_points,
-    extract_quotes,
-)
 from cronkite.config import CronkiteConfig
+from cronkite.instruction_builder import build_instruction
+from cronkite.response_parser import (
+    parse_response,
+    get_subgroups,
+    get_filtered_articles,
+)
 
 
 class Cronkite:
@@ -33,87 +33,81 @@ class Cronkite:
 
     def generate_story(self, articles: list[dict]) -> dict:
         """
-        Process articles through the pipeline and return a story.
+        Process articles through unified pipeline and return a story.
 
         Args:
             articles: List of article dicts with id, title, summary, text,
                       published_at, source
 
         Returns:
-            Story dict with title, summary, quotes, sub_stories,
+            Story dict with title, summary, key_points, quotes, sub_stories,
             article_ids, noise_article_ids
         """
         if not articles:
-            return {
-                "title": "",
-                "summary": "",
-                "key_points": [],
-                "quotes": [],
-                "sub_stories": [],
-                "article_ids": [],
-                "noise_article_ids": [],
-            }
+            return self._empty_story()
 
-        # Step 1: Filter noise
-        noise_ids = []
-        if self.config.filter_noise:
-            filtered_articles, noise_ids = filter_noise(
-                articles, self.client, self.model
-            )
-        else:
-            filtered_articles = articles
+        # Build instruction based on config
+        instruction = build_instruction(self.config)
 
+        # Single LLM call for main story
+        response = self._call_llm(instruction, articles)
+
+        # Check if all articles were filtered as noise
+        filtered_articles = get_filtered_articles(articles, response, self.config)
         if not filtered_articles:
             return {
-                "title": "",
-                "summary": "",
-                "key_points": [],
-                "quotes": [],
-                "sub_stories": [],
-                "article_ids": [],
-                "noise_article_ids": noise_ids,
+                **self._empty_story(),
+                "noise_article_ids": [a["id"] for a in articles],
             }
 
-        # Step 2: Group articles into sub-clusters
-        subgroups = []
-        if self.config.group_articles:
-            subgroups = group_articles(filtered_articles, self.client, self.model)
+        # Parse response into story structure
+        story = parse_response(response, self.config, articles)
 
-        # Step 3: Generate main story title
-        title = ""
-        if self.config.generate_title:
-            title = generate_title(filtered_articles, self.client, self.model)
+        # Generate substories if enabled
+        if self.config.generate_substories:
+            subgroups = get_subgroups(response, self.config)
+            if subgroups:
+                story["sub_stories"] = [
+                    self._generate_substory(subgroup, filtered_articles)
+                    for subgroup in subgroups
+                ]
 
-        # Step 4: Generate main story summary
-        summary = ""
-        if self.config.generate_summary:
-            summary = generate_summary(filtered_articles, self.client, self.model)
+        return story
 
-        # Step 5: Generate key points
-        key_points = []
-        if self.config.generate_key_points:
-            key_points = generate_key_points(filtered_articles, self.client, self.model)
+    def _call_llm(self, instruction: str, articles: list[dict]) -> dict:
+        """
+        Make a single LLM call with the given instruction and articles.
 
-        # Step 6: Extract quotes
-        quotes = []
-        if self.config.extract_quotes:
-            quotes = extract_quotes(filtered_articles, self.client, self.model)
+        Args:
+            instruction: Combined system instruction
+            articles: Articles to process
 
-        # Step 7: Generate substories for each sub-group
-        sub_stories = []
-        if self.config.generate_substories and subgroups:
-            for subgroup in subgroups:
-                sub_stories.append(self._generate_substory(subgroup, filtered_articles))
+        Returns:
+            Parsed JSON response from LLM
+        """
+        # Prepare article data for the LLM
+        articles_for_llm = [
+            {
+                "id": article["id"],
+                "title": article["title"],
+                "summary": article["summary"],
+                "text": article["text"],
+                "source": article["source"],
+                "published_at": article["published_at"],
+            }
+            for article in articles
+        ]
 
-        return {
-            "title": title,
-            "summary": summary,
-            "key_points": key_points,
-            "quotes": quotes,
-            "sub_stories": sub_stories,
-            "article_ids": [a["id"] for a in filtered_articles],
-            "noise_article_ids": noise_ids,
-        }
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": instruction},
+                {"role": "user", "content": json.dumps(articles_for_llm)},
+            ],
+            response_format={"type": "json_object"},
+        )
+
+        return json.loads(response.choices[0].message.content)
 
     def _generate_substory(self, subgroup: dict, all_articles: list[dict]) -> dict:
         """
@@ -136,11 +130,35 @@ class Cronkite:
                 "article_ids": [],
             }
 
-        title = generate_title(subgroup_articles, self.client, self.model)
-        summary = generate_summary(subgroup_articles, self.client, self.model)
+        # Use unified call for substory with title + summary only
+        substory_config = CronkiteConfig(
+            filter_noise=False,
+            group_articles=False,
+            generate_title=True,
+            generate_summary=True,
+            generate_key_points=False,
+            extract_quotes=False,
+            generate_substories=False,
+        )
+
+        instruction = build_instruction(substory_config)
+        response = self._call_llm(instruction, subgroup_articles)
 
         return {
-            "title": title,
-            "summary": summary,
+            "title": response.get("title", subgroup.get("theme", "")),
+            "summary": response.get("summary", ""),
             "article_ids": list(article_ids),
+        }
+
+    def _empty_story(self) -> dict:
+        """Return an empty story structure."""
+        return {
+            "title": "",
+            "summary": "",
+            "key_points": [],
+            "quotes": [],
+            "location": None,
+            "sub_stories": [],
+            "article_ids": [],
+            "noise_article_ids": [],
         }

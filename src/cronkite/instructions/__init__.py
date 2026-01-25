@@ -1,6 +1,9 @@
-from cronkite.instructions.filter_noise import FILTER_NOISE_INSTRUCTION
-from cronkite.instructions.group_articles import GROUP_ARTICLES_INSTRUCTION
-from cronkite.instructions.generate_title import GENERATE_TITLE_INSTRUCTION
-from cronkite.instructions.generate_summary import GENERATE_SUMMARY_INSTRUCTION
-from cronkite.instructions.generate_key_points import GENERATE_KEY_POINTS_INSTRUCTION
-from cronkite.instructions.extract_quotes import EXTRACT_QUOTES_INSTRUCTION
+from cronkite.instructions.generate_story import (
+    BASE_PREAMBLE,
+    FILTER_NOISE_COMPONENT,
+    GROUP_ARTICLES_COMPONENT,
+    GENERATE_TITLE_COMPONENT,
+    GENERATE_SUMMARY_COMPONENT,
+    GENERATE_KEY_POINTS_COMPONENT,
+    EXTRACT_QUOTES_COMPONENT,
+)
