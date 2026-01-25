@@ -8,8 +8,10 @@ from cronkite.actions import (
     group_articles,
     generate_title,
     generate_summary,
+    generate_key_points,
     extract_quotes,
 )
+from cronkite.config import CronkiteConfig
 
 
 class Cronkite:
@@ -17,19 +19,21 @@ class Cronkite:
     LLM-powered agent that generates cohesive news stories from article clusters.
     """
 
-    def __init__(self, model: str = "gpt-4o"):
+    def __init__(self, model: str = "gpt-4o", config: CronkiteConfig | None = None):
         """
-        Initialize Cronkite with a configurable OpenAI model.
+        Initialize Cronkite with a configurable OpenAI model and pipeline config.
 
         Args:
             model: OpenAI model identifier (e.g., "gpt-4o", "gpt-4o-mini")
+            config: Pipeline configuration. Defaults to all actions enabled.
         """
         self.model = model
+        self.config = config or CronkiteConfig()
         self.client = OpenAI()
 
     def generate_story(self, articles: list[dict]) -> dict:
         """
-        Process articles through the full pipeline and return a story.
+        Process articles through the pipeline and return a story.
 
         Args:
             articles: List of article dicts with id, title, summary, text,
@@ -43,6 +47,7 @@ class Cronkite:
             return {
                 "title": "",
                 "summary": "",
+                "key_points": [],
                 "quotes": [],
                 "sub_stories": [],
                 "article_ids": [],
@@ -50,14 +55,19 @@ class Cronkite:
             }
 
         # Step 1: Filter noise
-        filtered_articles, noise_ids = filter_noise(
-            articles, self.client, self.model
-        )
+        noise_ids = []
+        if self.config.filter_noise:
+            filtered_articles, noise_ids = filter_noise(
+                articles, self.client, self.model
+            )
+        else:
+            filtered_articles = articles
 
         if not filtered_articles:
             return {
                 "title": "",
                 "summary": "",
+                "key_points": [],
                 "quotes": [],
                 "sub_stories": [],
                 "article_ids": [],
@@ -65,25 +75,40 @@ class Cronkite:
             }
 
         # Step 2: Group articles into sub-clusters
-        subgroups = group_articles(filtered_articles, self.client, self.model)
+        subgroups = []
+        if self.config.group_articles:
+            subgroups = group_articles(filtered_articles, self.client, self.model)
 
         # Step 3: Generate main story title
-        title = generate_title(filtered_articles, self.client, self.model)
+        title = ""
+        if self.config.generate_title:
+            title = generate_title(filtered_articles, self.client, self.model)
 
         # Step 4: Generate main story summary
-        summary = generate_summary(filtered_articles, self.client, self.model)
+        summary = ""
+        if self.config.generate_summary:
+            summary = generate_summary(filtered_articles, self.client, self.model)
 
-        # Step 5: Extract quotes
-        quotes = extract_quotes(filtered_articles, self.client, self.model)
+        # Step 5: Generate key points
+        key_points = []
+        if self.config.generate_key_points:
+            key_points = generate_key_points(filtered_articles, self.client, self.model)
 
-        # Step 6: Generate substories for each sub-group
+        # Step 6: Extract quotes
+        quotes = []
+        if self.config.extract_quotes:
+            quotes = extract_quotes(filtered_articles, self.client, self.model)
+
+        # Step 7: Generate substories for each sub-group
         sub_stories = []
-        for subgroup in subgroups:
-            sub_stories.append(self._generate_substory(subgroup, filtered_articles))
+        if self.config.generate_substories and subgroups:
+            for subgroup in subgroups:
+                sub_stories.append(self._generate_substory(subgroup, filtered_articles))
 
         return {
             "title": title,
             "summary": summary,
+            "key_points": key_points,
             "quotes": quotes,
             "sub_stories": sub_stories,
             "article_ids": [a["id"] for a in filtered_articles],
