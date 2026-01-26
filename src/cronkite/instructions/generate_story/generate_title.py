@@ -1,20 +1,24 @@
 GENERATE_TITLE_COMPONENT = {
-    "task": """## Generate Title
+    "task": """Generate a short, neutral event title.
 
-Create a short event label (NOT a full headline) that identifies the story.
+Rules:
+- 3–7 words
+- Factual, encyclopedic tone
+- Event-focused (what happened)
+- Simple verbs allowed (e.g. Bombs, Approves, Exits, Hits)
 
-Requirements:
-- 2-6 words maximum
-- Neutral: no opinion, emotion, or sensationalism
-- Label-like: e.g., "Cairo Ceasefire Negotiations", "Apple M4 MacBook Pro"
+Avoid:
+- Emotion, opinion, or hype
+- Clickbait phrasing
+- Full sentences or punctuation
 
-DO NOT:
-- Write a full headline or sentence
-- Include action verbs (no "resumes", "announces", "reveals")
-- Use clickbait or emotional language""",
+Examples:
+- US Bombs Iranian Energy Infrastructure
+- UK To Establish National Police Service
+- Gold Prices Hit All-Time High
+- Amazon To Exit Japanese Market
+- New York Protests Grow""",
 
     "output_field": "title",
     "output_type": "string",
-    "output_description": "Short neutral event label (2-6 words)",
-    "output_example": '"Gaza Humanitarian Crisis"',
 }
