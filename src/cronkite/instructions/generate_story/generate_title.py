@@ -21,4 +21,6 @@ Examples:
 
     "output_field": "title",
     "output_type": "string",
+    "output_description": "Short, neutral event title (3-7 words)",
+    "output_example": '"US Bombs Iranian Energy Infrastructure"',
 }
