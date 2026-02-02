@@ -42,11 +42,20 @@ Requires `OPENAI_API_KEY` in environment or `.env` file.
 ```python
 from cronkite import Cronkite, CronkiteConfig
 
-# Default: all actions enabled
 cronkite = Cronkite(model="gpt-4o")
+
+# Generate a story from article clusters
 story = cronkite.generate_story(articles)
 
-# Custom config: disable specific actions
+# Classify stories by topic
+classified_stories = cronkite.classify_stories([story1, story2, story3])
+# Each story now has a 'topics' field, e.g., ["Politics", "Economy"]
+```
+
+### Custom Configuration
+
+```python
+# Disable specific actions in story generation
 config = CronkiteConfig(
     filter_noise=True,
     group_articles=True,
@@ -114,6 +123,22 @@ articles = [
 }
 ```
 
+## Topic Classification
+
+The `classify_stories` method assigns topics to stories from the following categories:
+
+- **Politics** – elections, government, policy, diplomacy
+- **Conflict & Security** – wars, terrorism, military, defense
+- **Crime** – crime, policing, public safety, corruption, criminal trials
+- **Business** – companies, markets, earnings, trade
+- **Economy** – inflation, jobs, GDP, interest rates, public finance
+- **Technology** – AI, software, hardware, cybersecurity, space, research
+- **Health** – public health, outbreaks, healthcare systems
+- **Environment** – climate, energy, disasters, conservation
+- **Society** – culture, education, demographics, social issues
+- **Sports** – all competitive sport
+- **Entertainment** – film, TV, music, celebrities
+
 ## Project Structure
 
 ```
@@ -122,16 +147,21 @@ src/cronkite/
 ├── config.py                # CronkiteConfig dataclass
 ├── instruction_builder.py   # Combines instructions based on config
 ├── response_parser.py       # Parses LLM response
+├── actions/                 # Action implementations
+│   ├── generate_story.py
+│   └── classify_stories.py
 └── instructions/
-    └── generate_story/      # Modular instruction components
-        ├── generate_story_base.py
-        ├── filter_noise.py
-        ├── group_articles.py
-        ├── generate_title.py
-        ├── generate_summary.py
-        ├── generate_key_points.py
-        ├── extract_quotes.py
-        └── resolve_location.py
+    ├── generate_story/      # Story generation components
+    │   ├── generate_story_base.py
+    │   ├── filter_noise.py
+    │   ├── group_articles.py
+    │   ├── generate_title.py
+    │   ├── generate_summary.py
+    │   ├── generate_key_points.py
+    │   ├── extract_quotes.py
+    │   └── resolve_location.py
+    └── classify_stories/    # Classification components
+        └── classify_stories.py
 ```
 
 ## Testing
@@ -140,9 +170,14 @@ src/cronkite/
 # List available test clusters
 poetry run python -m tests.test_cronkite --list
 
-# Run on a test cluster
+# Test story generation
 poetry run python -m tests.test_cronkite middle_east_conflict
 poetry run python -m tests.test_cronkite tech_product_launch --model gpt-4o-mini
+
+# Test story classification
+poetry run python -m tests.test_classify_stories middle_east_conflict
+poetry run python -m tests.test_classify_stories --all
+poetry run python -m tests.test_classify_stories --all --model gpt-4o-mini
 ```
 
 ## Design Principles
