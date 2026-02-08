@@ -6,6 +6,7 @@ load_dotenv()
 from cronkite.config import CronkiteConfig
 from cronkite.actions import generate_story as _generate_story
 from cronkite.actions import classify_stories as _classify_stories
+from cronkite.actions import group_stories as _group_stories
 
 
 class Cronkite:
@@ -50,3 +51,17 @@ class Cronkite:
             List of story dicts with 'topics' field added to each
         """
         return _classify_stories(self.client, self.model, stories)
+
+    def group_stories(self, group_a: list[dict], group_b: list[dict]) -> list[dict]:
+        """
+        Link stories across two groups that cover the same underlying event.
+
+        Args:
+            group_a: First list of story dicts with title, summary, key_points, etc.
+            group_b: Second list of story dicts with title, summary, key_points, etc.
+
+        Returns:
+            List of link dicts, each with "group_a_index" and "group_b_index"
+            indicating which stories match across the two groups.
+        """
+        return _group_stories(self.client, self.model, group_a, group_b)
